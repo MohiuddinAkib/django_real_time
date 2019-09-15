@@ -1,0 +1,78 @@
+version: '3'
+
+services:
+  drf_db:
+    container_name: drf_db
+    labels:
+      maintainer: 'akib'
+    image: postgres:11.5-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/
+    networks:
+      - drf_network
+
+  drf_pgadmin:
+    image: dpage/pgadmin4
+    container_name: drf_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - './pgadmin:/var/lib/pgadmin'
+    ports:
+      - 3000:80
+    depends_on:
+      - drf_db
+    networks:
+      - drf_network
+
+  drf_server:
+    container_name: drf_server
+    labels:
+      maintainer: 'akib'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - PORT=${PORT}
+        - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+        - DB_DRIVER=${DB_DRIVER}
+        - DB_HOST=${DB_HOST}
+        - DB_USER=${DB_USER}
+        - DB_PASS=${DB_PASS}
+        - DB_NAME=${DB_NAME}
+        - DB_PORT=${DB_PORT}
+    restart: on-failure
+    env_file:
+      - .env
+    environment:
+      - PORT=${PORT}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DB_DRIVER=${DB_DRIVER}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - ${PORT}:${PORT}
+    expose:
+      - ${PORT}
+    depends_on:
+      - drf_db
+    networks:
+      - drf_network
+    entrypoint: pipenv run python manage.py runserver
+    command: 0.0.0.0:${PORT}
+
+networks:
+  drf_network:
+    driver: bridge
