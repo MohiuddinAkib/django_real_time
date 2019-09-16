@@ -70,7 +70,7 @@ services:
       - drf_db
     networks:
       - drf_network
-    entrypoint: pipenv run python manage.py runserver
+    entrypoint: python manage.py runserver
     command: 0.0.0.0:${PORT}
 
 networks:
